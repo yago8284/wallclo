@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Clock Wallpaper Ultra</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Anton&family=Orbitron:wght@400;700;900&family=Roboto+Mono:wght@300;400;700&family=Share+Tech+Mono&family=Oswald:wght@200;400;700&family=Montserrat:wght@100;300;700;900&family=Raleway:wght@100;300;700;900&family=Inter:wght@300;400;700;900&family=Playfair+Display:wght@400;700;900&family=DM+Serif+Display&family=Cinzel:wght@400;700;900&family=Space+Grotesk:wght@300;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#090910;--panel:#0f0f16;--brd:#1a1a24;--surf:#141420;--surf2:#1c1c2a;
+  --acc:#6366f1;--acc2:#a78bfa;--txt:#ddddf0;--dim:#52527a;--mut:#252535;
+  --pw:300px;--radius:9px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:'Inter',sans-serif;color:var(--txt);font-size:12px}
+#app{display:flex;height:100%}
+
+/* ─── STAGE ─── */
+#stage{flex:1;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;
+  background:repeating-conic-gradient(#0c0c14 0% 25%,#09090f 0% 50%) 0 0/16px 16px}
+#cWrap{position:relative;border-radius:3px;overflow:hidden;
+  box-shadow:0 0 0 1px rgba(255,255,255,0.05),0 20px 60px rgba(0,0,0,0.9)}
+#cWrap canvas{display:block}
+
+/* overlay handles */
+.ovh{position:absolute;pointer-events:none;z-index:20}
+#splitLine{position:absolute;left:0;right:0;height:2px;background:rgba(99,102,241,.65);cursor:ns-resize;pointer-events:all;z-index:21}
+#splitLine::after{content:'↕ Depth rozdeľovač';position:absolute;left:50%;transform:translateX(-50%);top:-11px;
+  background:rgba(99,102,241,.85);color:#fff;font-size:8px;font-weight:700;letter-spacing:.1em;padding:2px 7px;border-radius:8px;white-space:nowrap;pointer-events:none}
+.dragDot{position:absolute;width:26px;height:26px;border-radius:50%;border:2px solid rgba(99,102,241,.8);
+  background:rgba(99,102,241,.15);display:flex;align-items:center;justify-content:center;
+  font-size:13px;cursor:grab;z-index:22;transform:translate(-50%,-50%);pointer-events:all;transition:border-color .15s}
+.dragDot:hover,.dragDot:active{border-color:var(--acc2);cursor:grabbing}
+#dotClock{color:rgba(255,255,255,.7)}
+#dotBG{color:rgba(120,200,120,.8);border-color:rgba(100,200,100,.6)}
+#dotFG{color:rgba(255,180,80,.8);border-color:rgba(255,180,80,.6)}
+
+/* zoom bar */
+#zbar{position:absolute;bottom:12px;left:12px;display:flex;gap:4px;z-index:10}
+.zb{width:26px;height:26px;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.07);
+  border-radius:7px;color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
+.zb:hover{background:rgba(99,102,241,.35)}
+#zlbl{height:26px;padding:0 8px;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);
+  border:1px solid rgba(255,255,255,.07);border-radius:7px;color:var(--dim);font-size:9px;display:flex;align-items:center}
+
+/* mode indicator */
+#modeTag{position:absolute;top:10px;left:50%;transform:translateX(-50%);
+  background:rgba(0,0,0,.55);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.08);
+  border-radius:20px;padding:4px 12px;font-size:9px;color:rgba(255,255,255,.35);letter-spacing:.08em;
+  pointer-events:none;z-index:10;white-space:nowrap}
+
+/* parallax indicator */
+#pxDot{position:absolute;top:10px;right:10px;width:8px;height:8px;border-radius:50%;
+  background:var(--acc);box-shadow:0 0 6px var(--acc);z-index:10;opacity:0;transition:opacity .3s}
+
+/* ─── PANEL ─── */
+#panel{width:var(--pw);min-width:var(--pw);height:100%;display:flex;flex-direction:column;
+  background:var(--panel);border-left:1px solid var(--brd)}
+#ph{padding:14px 14px 10px;border-bottom:1px solid var(--brd);flex-shrink:0}
+#ph h1{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#fff;letter-spacing:.01em}
+#ph p{font-size:9px;color:var(--dim);margin-top:2px}
+
+/* tab bar */
+#tabs{display:flex;border-bottom:1px solid var(--brd);flex-shrink:0}
+.tab{flex:1;padding:9px 0;text-align:center;font-size:10px;font-weight:600;color:var(--dim);cursor:pointer;
+  border-bottom:2px solid transparent;transition:all .15s;letter-spacing:.03em}
+.tab:hover{color:var(--txt)}
+.tab.on{color:var(--acc2);border-bottom-color:var(--acc)}
+
+#ps{flex:1;overflow-y:auto;padding:11px 12px 0;scrollbar-width:thin;scrollbar-color:var(--surf2) transparent}
+#ps::-webkit-scrollbar{width:3px}
+#ps::-webkit-scrollbar-thumb{background:var(--surf2)}
+.tabpane{display:none}.tabpane.on{display:block}
+
+/* section */
+.sec{margin-bottom:15px}
+.st{font-size:8px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--mut);
+  margin-bottom:7px;padding-bottom:5px;border-bottom:1px solid var(--brd)}
+
+/* upload */
+.upbtn{width:100%;padding:9px 8px;background:var(--surf);border:1.5px dashed var(--brd);border-radius:var(--radius);
+  color:var(--dim);font-size:10px;cursor:pointer;text-align:center;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:5px}
+.upbtn:hover{border-color:var(--acc);color:var(--acc2);background:rgba(99,102,241,.04)}
+.upbtn.ok{border-style:solid;border-color:rgba(99,102,241,.45);color:var(--acc2)}
+.upbtn.ok2{border-style:solid;border-color:rgba(255,180,80,.45);color:#ffb450}
+
+/* grid */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px}
+.gbtn{padding:7px 3px;background:var(--surf);border:1.5px solid var(--brd);border-radius:8px;
+  color:var(--dim);font-size:9px;font-family:'Inter',sans-serif;text-align:center;cursor:pointer;transition:all .15s;line-height:1.3}
+.gbtn .gl{display:block;font-weight:700;color:var(--txt);font-size:9px}
+.gbtn .gs{font-size:8px;color:var(--mut)}
+.gbtn:hover{border-color:var(--acc);background:rgba(99,102,241,.05)}
+.gbtn.on{border-color:var(--acc);background:rgba(99,102,241,.12)}
+.gbtn.on .gl{color:var(--acc2)}
+
+/* slider row */
+.cr{display:flex;align-items:center;gap:7px;margin-bottom:8px}
+.cr label{font-size:10px;color:var(--dim);white-space:nowrap;min-width:72px}
+.cr input[type=range]{flex:1;-webkit-appearance:none;height:3px;background:var(--surf2);border-radius:2px;outline:none;cursor:pointer}
+.cr input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;
+  background:var(--acc);border:2px solid #fff;box-shadow:0 0 5px rgba(99,102,241,.6);cursor:pointer}
+.cr .v{font-size:10px;color:var(--txt);font-weight:700;min-width:28px;text-align:right}
+
+/* color swatch */
+.colr{display:flex;align-items:center;gap:7px;margin-bottom:8px}
+.colr label{font-size:10px;color:var(--dim);flex:1}
+.sw{width:24px;height:24px;border-radius:6px;border:2px solid var(--brd);cursor:pointer;overflow:hidden;position:relative;flex-shrink:0}
+.sw input[type=color]{position:absolute;inset:-4px;opacity:0;cursor:pointer;width:calc(100%+8px);height:calc(100%+8px)}
+
+/* per-digit colors */
+#digitColors{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px}
+.dc-item{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:8px;color:var(--dim)}
+.dc-sw{width:22px;height:22px;border-radius:5px;border:1.5px solid var(--brd);cursor:pointer;overflow:hidden;position:relative}
+.dc-sw input[type=color]{position:absolute;inset:-3px;opacity:0;cursor:pointer;width:calc(100%+6px);height:calc(100%+6px)}
+
+/* toggle */
+.tr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.tr label{font-size:10px;color:var(--dim)}
+.tog{position:relative;width:30px;height:16px;flex-shrink:0}
+.tog input{opacity:0;width:0;height:0}
+.tsl{position:absolute;inset:0;background:var(--surf2);border-radius:16px;cursor:pointer;transition:background .2s}
+.tsl:before{content:'';position:absolute;width:10px;height:10px;left:3px;top:3px;background:#fff;border-radius:50%;transition:transform .2s}
+.tog input:checked+.tsl{background:var(--acc)}
+.tog input:checked+.tsl:before{transform:translateX(14px)}
+
+/* font select */
+select.fsel{width:100%;padding:6px 8px;background:var(--surf);border:1.5px solid var(--brd);border-radius:8px;
+  color:var(--txt);font-size:10px;font-family:'Inter',sans-serif;cursor:pointer;outline:none;
+  transition:border-color .15s;margin-bottom:7px;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236366f1'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 7px center}
+select.fsel:hover,select.fsel:focus{border-color:var(--acc)}
+select.fsel option{background:#111;color:#ddd}
+
+/* footer */
+#pf{padding:10px 12px;border-top:1px solid var(--brd);flex-shrink:0;display:flex;gap:6px}
+#expBtn{flex:1;padding:11px;background:linear-gradient(135deg,var(--acc),var(--acc2));border:none;border-radius:var(--radius);
+  color:#fff;font-size:11px;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;letter-spacing:.03em;
+  transition:opacity .2s,transform .1s;display:flex;align-items:center;justify-content:center;gap:6px}
+#expBtn:hover{opacity:.88}#expBtn:active{transform:scale(.98)}
+#pxBtn{padding:11px 12px;background:var(--surf);border:1.5px solid var(--brd);border-radius:var(--radius);
+  color:var(--dim);font-size:18px;cursor:pointer;transition:all .2s;display:flex;align-items:center}
+#pxBtn:hover{border-color:var(--acc);color:var(--acc2);background:rgba(99,102,241,.08)}
+#pxBtn.on{border-color:var(--acc);background:rgba(99,102,241,.15);color:var(--acc2)}
+
+/* small helper */
+.note{font-size:8.5px;color:var(--mut);margin-bottom:8px;line-height:1.5}
+
+@media(max-width:640px){
+  :root{--pw:100%}
+  #app{flex-direction:column}
+  #stage{height:50vh}
+  #panel{height:50vh;border-left:none;border-top:1px solid var(--brd)}
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ─── STAGE ─── -->
+<div id="stage">
+  <div id="modeTag">✥ hodiny &nbsp;|&nbsp; 🟢 pozadie &nbsp;|&nbsp; 🟡 popredie &nbsp;|&nbsp; ↕ depth</div>
+  <div id="pxDot" title="Parallax aktívny"></div>
+  <div id="cWrap">
+    <canvas id="main"></canvas>
+    <div id="splitLine"></div>
+    <div class="dragDot" id="dotClock">✥</div>
+    <div class="dragDot" id="dotBG">🟢</div>
+    <div class="dragDot" id="dotFG">🟡</div>
+  </div>
+  <div id="zbar">
+    <button class="zb" onclick="doZ(-0.1)">−</button>
+    <div id="zlbl">100%</div>
+    <button class="zb" onclick="doZ(0.1)">+</button>
+    <button class="zb" title="Fit" onclick="fitZ()" style="font-size:10px">⊡</button>
+  </div>
+</div>
+
+<!-- ─── PANEL ─── -->
+<div id="panel">
+  <div id="ph">
+    <h1>⏱ Clock Wallpaper Ultra</h1>
+    <p>Dual-image depth · parallax · per-digit farby</p>
+  </div>
+  <!-- TABS -->
+  <div id="tabs">
+    <div class="tab on" onclick="switchTab('img')">📷 Obrázky</div>
+    <div class="tab" onclick="switchTab('clock')">🕐 Hodiny</div>
+    <div class="tab" onclick="switchTab('depth')">🌊 Depth</div>
+    <div class="tab" onclick="switchTab('extra')">✨ Extra</div>
+  </div>
+
+  <div id="ps">
+
+    <!-- ══ TAB: OBRÁZKY ══ -->
+    <div class="tabpane on" id="tp-img">
+
+      <div class="sec">
+        <div class="st">Formát plátna</div>
+        <div class="g3">
+          <div class="gbtn on" onclick="setWH(1080,1920,this)"><span class="gl">9:16</span><span class="gs">1080×1920</span></div>
+          <div class="gbtn" onclick="setWH(1170,2532,this)"><span class="gl">iPhone</span><span class="gs">1170×2532</span></div>
+          <div class="gbtn" onclick="setWH(1440,3040,this)"><span class="gl">Samsung</span><span class="gs">1440×3040</span></div>
+          <div class="gbtn" onclick="setWH(1920,1080,this)"><span class="gl">16:9</span><span class="gs">1920×1080</span></div>
+          <div class="gbtn" onclick="setWH(2560,1440,this)"><span class="gl">QHD</span><span class="gs">2560×1440</span></div>
+          <div class="gbtn" onclick="setWH(1080,1080,this)"><span class="gl">1:1</span><span class="gs">1080×1080</span></div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="st">🟢 Pozadie (celá plocha)</div>
+        <p class="note">Nahraje sa ako spodná vrstva — pokrýva celé plátno. Pohybuje sa pomaly pri parallaxe.</p>
+        <div class="upbtn" id="upBG" onclick="document.getElementById('fiBG').click()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Nahraj pozadie
+        </div>
+        <input type="file" id="fiBG" accept="image/*" style="display:none">
+        <div style="height:6px"></div>
+        <div class="cr"><label>Veľkosť</label><input type="range" id="bgScale" min="50" max="300" value="100" oninput="rd()"><span class="v" id="vBGS">100%</span></div>
+        <div class="cr"><label>Tmavosť</label><input type="range" id="bgDim" min="0" max="90" value="20" oninput="rd()"><span class="v" id="vBGD">20%</span></div>
+        <div class="cr"><label>Blur</label><input type="range" id="bgBlur" min="0" max="20" value="0" oninput="rd()"><span class="v" id="vBGB">0px</span></div>
+        <p class="note">🟢 bod na plátne = posun pozadia</p>
+      </div>
+
+      <div class="sec">
+        <div class="st">🟡 Popredie (depth maska)</div>
+        <p class="note">Nahraje sa ako vrchná vrstva nad hodinami — maskovaná rozdeľovačom. Pohybuje sa rýchlejšie pri parallaxe — vytvára hĺbku.</p>
+        <div class="upbtn" id="upFG" onclick="document.getElementById('fiFG').click()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Nahraj popredie
+        </div>
+        <input type="file" id="fiFG" accept="image/*" style="display:none">
+        <div style="height:6px"></div>
+        <div class="cr"><label>Veľkosť</label><input type="range" id="fgScale" min="50" max="300" value="100" oninput="rd()"><span class="v" id="vFGS">100%</span></div>
+        <div class="cr"><label>Tmavosť</label><input type="range" id="fgDim" min="0" max="90" value="0" oninput="rd()"><span class="v" id="vFGD">0%</span></div>
+        <div class="cr"><label>Blur hrany</label><input type="range" id="maskEdge" min="0" max="250" value="60" oninput="rd()"><span class="v" id="vME">60px</span></div>
+        <p class="note">🟡 bod na plátne = posun popredia</p>
+      </div>
+
+    </div><!-- /tp-img -->
+
+    <!-- ══ TAB: HODINY ══ -->
+    <div class="tabpane" id="tp-clock">
+
+      <div class="sec">
+        <div class="st">Formát času</div>
+        <div class="g2">
+          <div class="gbtn on" onclick="setFmt('HH:MM:SS',this)"><span class="gl">HH:MM:SS</span></div>
+          <div class="gbtn" onclick="setFmt('HH:MM',this)"><span class="gl">HH:MM</span></div>
+          <div class="gbtn" onclick="setFmt('HH·MM',this)"><span class="gl">HH·MM</span><span class="gs">bodka</span></div>
+          <div class="gbtn" onclick="setFmt('HH MM',this)"><span class="gl">HH MM</span><span class="gs">medzera</span></div>
+          <div class="gbtn" onclick="setFmt('12H',this)"><span class="gl">12H AM/PM</span></div>
+          <div class="gbtn" onclick="setFmt('SPLIT',this)"><span class="gl">HH / MM</span><span class="gs">2 riadky</span></div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="st">Písmo</div>
+        <select class="fsel" id="fontSel" onchange="rd()">
+          <option value="'Bebas Neue',sans-serif">Bebas Neue — Condensed</option>
+          <option value="'Anton',sans-serif">Anton — Impact</option>
+          <option value="'Orbitron',sans-serif">Orbitron — Sci-Fi</option>
+          <option value="'Roboto Mono',monospace">Roboto Mono — Monospace</option>
+          <option value="'Share Tech Mono',monospace">Share Tech Mono — Terminal</option>
+          <option value="'Oswald',sans-serif">Oswald — Strong</option>
+          <option value="'Montserrat',sans-serif">Montserrat — Modern</option>
+          <option value="'Raleway',sans-serif">Raleway — Elegant</option>
+          <option value="'Inter',sans-serif">Inter — Clean</option>
+          <option value="'Playfair Display',serif">Playfair Display — Serif</option>
+          <option value="'DM Serif Display',serif">DM Serif Display — Editorial</option>
+          <option value="'Cinzel',serif">Cinzel — Roman</option>
+          <option value="'Space Grotesk',sans-serif">Space Grotesk — Geometric</option>
+        </select>
+        <div class="cr"><label>Hrúbka</label><input type="range" id="fontW" min="100" max="900" step="100" value="900" oninput="rd()"><span class="v" id="vFW">900</span></div>
+        <div class="cr"><label>Rozostup</label><input type="range" id="fontLS" min="-5" max="40" value="0" oninput="rd()"><span class="v" id="vLS">0</span></div>
+      </div>
+
+      <div class="sec">
+        <div class="st">Štýl vykreslenia</div>
+        <div class="g3">
+          <div class="gbtn on" onclick="setMode('fill',this)"><span class="gl">Fill</span></div>
+          <div class="gbtn" onclick="setMode('outline',this)"><span class="gl">Outline</span></div>
+          <div class="gbtn" onclick="setMode('neon',this)"><span class="gl">Neon</span></div>
+          <div class="gbtn" onclick="setMode('shadow',this)"><span class="gl">Shadow</span></div>
+          <div class="gbtn" onclick="setMode('glitch',this)"><span class="gl">Glitch</span></div>
+          <div class="gbtn" onclick="setMode('ghost',this)"><span class="gl">Ghost</span></div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="st">Veľkosť &amp; Pozícia</div>
+        <div class="cr"><label>Veľkosť</label><input type="range" id="cSize" min="4" max="75" value="20" oninput="rd()"><span class="v" id="vCS">20%</span></div>
+        <div class="cr"><label>Priehľadnosť</label><input type="range" id="cOpac" min="10" max="100" value="95" oninput="rd()"><span class="v" id="vOP">95%</span></div>
+        <p class="note">✥ bod na plátne = presun hodin</p>
+      </div>
+
+      <div class="sec">
+        <div class="st">Farby — každý segment zvlášť</div>
+        <p class="note">Klikni na farebné štvorčeky pre zmenu farby každej časti hodín.</p>
+        <div id="digitColors"></div>
+        <div class="colr"><label>Žiara / accent</label>
+          <div class="sw" id="swGlow" style="background:#6366f1"><input type="color" id="cGlow" value="#6366f1" oninput="syncSw('Glow');rd()"></div>
+        </div>
+      </div>
+
+    </div><!-- /tp-clock -->
+
+    <!-- ══ TAB: DEPTH ══ -->
+    <div class="tabpane" id="tp-depth">
+
+      <div class="sec">
+        <div class="st">Depth rozdeľovač</div>
+        <p class="note">↕ Linka na plátne = kde popredie prekrýva hodiny. Hodiny svietia spoza popredia.</p>
+        <div class="tr"><label>Popredie maskuje hodiny</label><label class="tog"><input type="checkbox" id="maskOn" checked onchange="rd()"><span class="tsl"></span></label></div>
+        <div class="cr"><label>Tvrdosť hrany</label><input type="range" id="maskEdge2" min="0" max="250" value="60" oninput="syncMask();rd()"><span class="v" id="vME2">60px</span></div>
+      </div>
+
+      <div class="sec">
+        <div class="st">Blur vrstvy (3D hĺbka)</div>
+        <div class="tr"><label>Zobraziť depth vrstvy</label><label class="tog"><input type="checkbox" id="depthOn" checked onchange="rd()"><span class="tsl"></span></label></div>
+        <div class="cr"><label>Intenzita</label><input type="range" id="depthAmt" min="0" max="100" value="60" oninput="rd()"><span class="v" id="vDA">60%</span></div>
+        <div class="cr"><label>Blur</label><input type="range" id="depthBlur" min="0" max="50" value="14" oninput="rd()"><span class="v" id="vDB">14px</span></div>
+        <div class="cr"><label>Posun</label><input type="range" id="depthOff" min="0" max="120" value="28" oninput="rd()"><span class="v" id="vDO">28px</span></div>
+      </div>
+
+    </div><!-- /tp-depth -->
+
+    <!-- ══ TAB: EXTRA ══ -->
+    <div class="tabpane" id="tp-extra">
+
+      <div class="sec">
+        <div class="st">Parallax efekt</div>
+        <p class="note">Pohybuj myšou nad plátnom (alebo nakloň telefón) — každá vrstva sa hýbe inak rýchlo.</p>
+        <div class="tr"><label>Zapnúť parallax</label><label class="tog"><input type="checkbox" id="pxOn" checked onchange="togglePX()"><span class="tsl"></span></label></div>
+        <div class="cr"><label>Intenzita BG</label><input type="range" id="pxBG" min="0" max="60" value="12" oninput="rd()"><span class="v" id="vPXBG">12</span></div>
+        <div class="cr"><label>Intenzita FG</label><input type="range" id="pxFG" min="0" max="60" value="28" oninput="rd()"><span class="v" id="vPXFG">28</span></div>
+        <div class="cr"><label>Intenzita hodin</label><input type="range" id="pxCK" min="0" max="40" value="8" oninput="rd()"><span class="v" id="vPXCK">8</span></div>
+      </div>
+
+      <div class="sec">
+        <div class="st">Doplnky</div>
+        <div class="tr"><label>Dátum (SK)</label><label class="tog"><input type="checkbox" id="showDate" checked onchange="rd()"><span class="tsl"></span></label></div>
+        <div class="tr"><label>Progress bar sekúnd</label><label class="tog"><input type="checkbox" id="showBar" checked onchange="rd()"><span class="tsl"></span></label></div>
+      </div>
+
+      <div class="sec">
+        <div class="st">Pozadie (ak nie je obrázok)</div>
+        <div class="colr"><label>Farba pozadia</label>
+          <div class="sw" id="swBG" style="background:#060614"><input type="color" id="cBG" value="#060614" oninput="syncSw('BG');rd()"></div>
+        </div>
+        <div class="colr"><label>Farba 2 (gradient)</label>
+          <div class="sw" id="swBG2" style="background:#0d0d2a"><input type="color" id="cBG2" value="#0d0d2a" oninput="syncSw('BG2');rd()"></div>
+        </div>
+      </div>
+
+    </div><!-- /tp-extra -->
+
+  </div><!-- /ps -->
+
+  <div id="pf">
+    <button id="pxBtn" title="Parallax preview" onclick="togglePXBtn()">🌊</button>
+    <button id="expBtn" onclick="doExport()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Stiahnuť PNG
+    </button>
+  </div>
+</div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════
+const S = {
+  W:1080, H:1920,
+  bgImg:null, fgImg:null,
+  bgX:0.5, bgY:0.5,
+  fgX:0.5, fgY:0.5,
+  clockX:0.5, clockY:0.5,
+  splitY:0.42,
+  zoom:1,
+  fmt:'HH:MM:SS',
+  mode:'fill',
+  // parallax smooth values
+  pxRaw:{x:0,y:0}, pxSmooth:{x:0,y:0},
+  pxActive:false,
+  // digit colors: [H1,H2,sep1,M1,M2,sep2,S1,S2]
+  digitColors:['#ffffff','#ffffff','#6366f1','#ffffff','#ffffff','#6366f1','#ffffff','#ffffff'],
+  segLabels:['H','H',':','M','M',':','S','S'],
+};
+
+// ══════════════════════════════════════════════════════
+// CANVAS
+// ══════════════════════════════════════════════════════
+const cv = document.getElementById('main');
+const ctx = cv.getContext('2d');
+
+function initCv(){ cv.width=S.W; cv.height=S.H; fitZ(); buildDigitColors(); rd(); }
+
+function fitZ(){
+  const st=document.getElementById('stage');
+  S.zoom=Math.min((st.clientWidth-40)/S.W,(st.clientHeight-50)/S.H,1);
+  applyZoom();
+}
+function applyZoom(){
+  cv.style.width=(S.W*S.zoom)+'px'; cv.style.height=(S.H*S.zoom)+'px';
+  const w=document.getElementById('cWrap');
+  w.style.width=(S.W*S.zoom)+'px'; w.style.height=(S.H*S.zoom)+'px';
+  document.getElementById('zlbl').textContent=Math.round(S.zoom*100)+'%';
+  posHandles();
+}
+function doZ(d){ S.zoom=Math.max(0.07,Math.min(3,S.zoom+d)); applyZoom(); }
+
+function setWH(w,h,el){
+  S.W=w; S.H=h; cv.width=w; cv.height=h;
+  el.closest('.g3,.g2').querySelectorAll('.gbtn').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on'); fitZ(); rd();
+}
+
+// ══════════════════════════════════════════════════════
+// TABS
+// ══════════════════════════════════════════════════════
+function switchTab(id){
+  document.querySelectorAll('.tab').forEach((t,i)=>{ t.classList.toggle('on', ['img','clock','depth','extra'][i]===id); });
+  document.querySelectorAll('.tabpane').forEach(p=>{ p.classList.toggle('on',p.id==='tp-'+id); });
+}
+
+// ══════════════════════════════════════════════════════
+// FILE UPLOADS
+// ══════════════════════════════════════════════════════
+function setupUpload(inputId, btnId, imgKey, cls){
+  document.getElementById(inputId).addEventListener('change', e=>{
+    const f=e.target.files[0]; if(!f) return;
+    const r=new FileReader();
+    r.onload=ev=>{ const i=new Image(); i.onload=()=>{ S[imgKey]=i; rd(); }; i.src=ev.target.result; };
+    r.readAsDataURL(f);
+    const b=document.getElementById(btnId);
+    b.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Načítané ✓';
+    b.className='upbtn '+cls;
+  });
+}
+setupUpload('fiBG','upBG','bgImg','ok');
+setupUpload('fiFG','upFG','fgImg','ok2');
+
+// ══════════════════════════════════════════════════════
+// DIGIT COLORS
+// ══════════════════════════════════════════════════════
+function buildDigitColors(){
+  const segs = getSegmentDefs();
+  const dc=document.getElementById('digitColors');
+  dc.innerHTML='';
+  segs.forEach((seg,i)=>{
+    const div=document.createElement('div'); div.className='dc-item';
+    div.innerHTML=`<div class="dc-sw" style="background:${S.digitColors[i]}">
+      <input type="color" value="${S.digitColors[i]}" data-i="${i}" oninput="updateDC(this)">
+    </div><span>${seg.lbl}</span>`;
+    dc.appendChild(div);
+  });
+}
+
+function getSegmentDefs(){
+  // returns array of {lbl, chars, colorIdx}
+  switch(S.fmt){
+    case 'HH:MM:SS': return [{lbl:'H1'},{lbl:'H2'},{lbl:':'},{lbl:'M1'},{lbl:'M2'},{lbl:':'},{lbl:'S1'},{lbl:'S2'}];
+    case 'HH:MM':    return [{lbl:'H1'},{lbl:'H2'},{lbl:':'},{lbl:'M1'},{lbl:'M2'}];
+    case 'HH·MM':    return [{lbl:'H1'},{lbl:'H2'},{lbl:'·'},{lbl:'M1'},{lbl:'M2'}];
+    case 'HH MM':    return [{lbl:'H1'},{lbl:'H2'},{lbl:' '},{lbl:'M1'},{lbl:'M2'}];
+    case '12H':      return [{lbl:'H1'},{lbl:'H2'},{lbl:':'},{lbl:'M1'},{lbl:'M2'},{lbl:'AM'}];
+    case 'SPLIT':    return [{lbl:'H1'},{lbl:'H2'},{lbl:'M1'},{lbl:'M2'}];
+    default:         return [{lbl:'H1'},{lbl:'H2'},{lbl:':'},{lbl:'M1'},{lbl:'M2'},{lbl:':'},{lbl:'S1'},{lbl:'S2'}];
+  }
+}
+
+function updateDC(inp){
+  const i=parseInt(inp.dataset.i);
+  S.digitColors[i]=inp.value;
+  inp.closest('.dc-sw').style.background=inp.value;
+  rd();
+}
+
+// ══════════════════════════════════════════════════════
+// SETTERS
+// ══════════════════════════════════════════════════════
+function setFmt(f,el){ S.fmt=f; el.closest('.g2,.g3').querySelectorAll('.gbtn').forEach(b=>b.classList.remove('on')); el.classList.add('on'); buildDigitColors(); rd(); }
+function setMode(m,el){ S.mode=m; el.closest('.g3').querySelectorAll('.gbtn').forEach(b=>b.classList.remove('on')); el.classList.add('on'); rd(); }
+function syncSw(id){ document.getElementById('sw'+id).style.background=document.getElementById('c'+id).value; }
+function syncMask(){ document.getElementById('maskEdge').value=document.getElementById('maskEdge2').value; document.getElementById('vME').textContent=document.getElementById('maskEdge2').value+'px'; }
+
+const g=id=>document.getElementById(id);
+const gv=id=>parseFloat(g(id).value);
+const gc=id=>g(id).value;
+const gb=id=>g(id).checked;
+const pad=n=>String(n).padStart(2,'0');
+
+function syncLabels(){
+  g('vBGS').textContent=gv('bgScale')+'%';
+  g('vBGD').textContent=gv('bgDim')+'%';
+  g('vBGB').textContent=gv('bgBlur')+'px';
+  g('vFGS').textContent=gv('fgScale')+'%';
+  g('vFGD').textContent=gv('fgDim')+'%';
+  g('vME').textContent=gv('maskEdge')+'px';
+  g('vME2').textContent=gv('maskEdge2')+'px';
+  g('vFW').textContent=gv('fontW');
+  g('vLS').textContent=gv('fontLS');
+  g('vCS').textContent=gv('cSize')+'%';
+  g('vOP').textContent=gv('cOpac')+'%';
+  g('vDA').textContent=gv('depthAmt')+'%';
+  g('vDB').textContent=gv('depthBlur')+'px';
+  g('vDO').textContent=gv('depthOff')+'px';
+  g('vPXBG').textContent=gv('pxBG');
+  g('vPXFG').textContent=gv('pxFG');
+  g('vPXCK').textContent=gv('pxCK');
+}
+
+// ══════════════════════════════════════════════════════
+// TIME STRINGS
+// ══════════════════════════════════════════════════════
+function getTimeChars(){
+  const now=new Date();
+  const H=pad(now.getHours()), M=pad(now.getMinutes()), Sc=pad(now.getSeconds());
+  const h12=pad(now.getHours()%12||12), ap=now.getHours()<12?'AM':'PM';
+  switch(S.fmt){
+    case 'HH:MM:SS': return [H[0],H[1],':',M[0],M[1],':',Sc[0],Sc[1]];
+    case 'HH:MM':    return [H[0],H[1],':',M[0],M[1]];
+    case 'HH·MM':    return [H[0],H[1],'·',M[0],M[1]];
+    case 'HH MM':    return [H[0],H[1],' ',M[0],M[1]];
+    case '12H':      return [h12[0],h12[1],':',M[0],M[1],' '+ap];
+    case 'SPLIT':    return [[H[0],H[1]], [M[0],M[1]]];
+    default:         return [H[0],H[1],':',M[0],M[1],':',Sc[0],Sc[1]];
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// IMAGE DRAWING
+// ══════════════════════════════════════════════════════
+function drawImgLayer(actx, img, W, H, scaleP, offXr, offYr, blurPx, dimA, pxOff, clipFn){
+  if(!img) return;
+  const sc=(scaleP/100)*Math.max(W/img.width,H/img.height);
+  const dw=img.width*sc, dh=img.height*sc;
+  const dx=W*offXr - dw/2 + (pxOff?pxOff.x:0);
+  const dy=H*offYr - dh/2 + (pxOff?pxOff.y:0);
+  actx.save();
+  if(clipFn) clipFn(actx,W,H);
+  if(blurPx>0) actx.filter=`blur(${blurPx}px)`;
+  actx.drawImage(img, dx-blurPx*2, dy-blurPx*2, dw+blurPx*4, dh+blurPx*4);
+  actx.filter='none';
+  actx.fillStyle=`rgba(0,0,0,${dimA})`;
+  actx.fillRect(-10,-10,W+20,H+20);
+  actx.restore();
+}
+
+// ══════════════════════════════════════════════════════
+// CLOCK DRAWING — per-character color
+// ══════════════════════════════════════════════════════
+function drawClock(actx, W, H, fontSize, fontStr, pxOff){
+  const chars = getTimeChars();
+  const isSplit = S.fmt==='SPLIT';
+  const ls = gv('fontLS');
+  const glowC = gc('cGlow');
+  const opac = gv('cOpac')/100;
+  const clockPxX = W*S.clockX + (pxOff?pxOff.x:0);
+  const clockPxY = H*S.clockY + (pxOff?pxOff.y:0);
+
+  actx.save();
+  actx.font=fontStr;
+  actx.textBaseline='middle';
+  actx.textAlign='center';
+
+  if(isSplit){
+    // two lines
+    const lines=[chars[0],chars[1]];
+    const lh=fontSize*1.05;
+    lines.forEach((line,li)=>{
+      const y = clockPxY + (li-0.5)*lh;
+      const lineStr=line.join('');
+      const baseColorIdx=li*2;
+      drawColoredChars(actx, lineStr.split(''), [S.digitColors[baseColorIdx],S.digitColors[baseColorIdx+1]], clockPxX, y, fontSize, ls, glowC, fontStr);
+    });
+  } else {
+    // single line
+    drawColoredChars(actx, chars, S.digitColors, clockPxX, clockPxY, fontSize, ls, glowC, fontStr);
+  }
+  actx.restore();
+
+  // date & bar
+  if(gb('showDate')) drawDate(actx, clockPxX, clockPxY + fontSize*(isSplit?1.1:0.58), fontSize, S.digitColors[0], opac);
+  if(gb('showBar')) drawBar(actx, clockPxX, clockPxY + fontSize*(isSplit?1.15:0.53), fontSize, S.digitColors[0], glowC, opac);
+}
+
+function drawColoredChars(actx, chars, colors, cx, cy, fontSize, ls, glowC, fontStr){
+  actx.font=fontStr;
+  // measure total width
+  let total=0;
+  const ws=chars.map(ch=>{ const w=actx.measureText(ch).width; total+=w; return w; });
+  total+=ls*Math.max(0,chars.length-1);
+  let curX=cx-total/2;
+  chars.forEach((ch,i)=>{
+    const col=colors[i]||colors[colors.length-1]||'#fff';
+    const mid=curX+ws[i]/2;
+    applyClockStyle(actx, S.mode, col, glowC);
+    if(S.mode==='outline'||S.mode==='glitch'){
+      actx.fillText(ch,mid,cy); actx.strokeText(ch,mid,cy);
+    } else {
+      actx.fillText(ch,mid,cy);
+    }
+    actx.shadowBlur=0; actx.shadowOffsetX=0; actx.shadowOffsetY=0;
+    curX+=ws[i]+ls;
+  });
+}
+
+function applyClockStyle(actx,mode,col,glowC){
+  actx.shadowBlur=0; actx.shadowOffsetX=0; actx.shadowOffsetY=0;
+  const lw=Math.max(1,actx.measureText('0').width*0.025);
+  switch(mode){
+    case 'fill':   actx.fillStyle=col; break;
+    case 'outline': actx.fillStyle='transparent'; actx.strokeStyle=col; actx.lineWidth=lw*1.2; break;
+    case 'neon':   actx.fillStyle=col; actx.shadowColor=glowC; actx.shadowBlur=55; break;
+    case 'shadow': actx.fillStyle=col; actx.shadowColor='rgba(0,0,0,.85)'; actx.shadowBlur=18; actx.shadowOffsetX=3; actx.shadowOffsetY=5; break;
+    case 'glitch': actx.fillStyle=col; actx.strokeStyle=glowC; actx.lineWidth=lw*.8; break;
+    case 'ghost':  actx.fillStyle=col; actx.globalAlpha*=0.4; break;
+  }
+}
+
+function drawDate(actx, x, y, fontSize, col, opac){
+  const DAYS=['nedeľa','pondelok','utorok','streda','štvrtok','piatok','sobota'];
+  const MON=['januára','februára','marca','apríla','mája','júna','júla','augusta','septembra','októbra','novembra','decembra'];
+  const now=new Date();
+  const ds=`${DAYS[now.getDay()]}, ${now.getDate()}. ${MON[now.getMonth()]} ${now.getFullYear()}`;
+  const fs=Math.max(10,Math.round(fontSize*0.12));
+  actx.save();
+  actx.globalAlpha=opac*0.5;
+  actx.font=`300 ${fs}px 'Inter',sans-serif`;
+  actx.textAlign='center'; actx.textBaseline='top';
+  actx.fillStyle=col;
+  actx.fillText(ds.toUpperCase(),x,y+fontSize*0.04);
+  actx.restore();
+}
+
+function drawBar(actx, x, y, fontSize, col, glowC, opac){
+  const now=new Date();
+  const frac=(now.getSeconds()+now.getMilliseconds()/1000)/60;
+  const bW=fontSize*1.0, bH=Math.max(2,S.W*0.0025);
+  const bX=x-bW/2;
+  actx.save();
+  actx.globalAlpha=opac*0.12;
+  actx.fillStyle=col;
+  actx.beginPath(); if(actx.roundRect) actx.roundRect(bX,y,bW,bH,bH/2); else actx.rect(bX,y,bW,bH); actx.fill();
+  actx.globalAlpha=opac*0.85;
+  const bg=actx.createLinearGradient(bX,0,bX+bW,0);
+  bg.addColorStop(0,col); bg.addColorStop(1,glowC);
+  actx.fillStyle=bg; actx.shadowColor=glowC; actx.shadowBlur=bH*5;
+  actx.beginPath(); if(actx.roundRect) actx.roundRect(bX,y,bW*frac,bH,bH/2); else actx.rect(bX,y,bW*frac,bH); actx.fill();
+  actx.restore();
+}
+
+// ══════════════════════════════════════════════════════
+// PARALLAX
+// ══════════════════════════════════════════════════════
+let pxEnabled=true;
+
+function togglePX(){ pxEnabled=gb('pxOn'); document.getElementById('pxBtn').classList.toggle('on',pxEnabled); }
+function togglePXBtn(){ g('pxOn').checked=!g('pxOn').checked; togglePX(); }
+
+window.addEventListener('mousemove',e=>{
+  if(!pxEnabled) return;
+  const st=document.getElementById('stage');
+  const r=st.getBoundingClientRect();
+  S.pxRaw.x=(e.clientX-r.left-r.width/2)/(r.width/2);
+  S.pxRaw.y=(e.clientY-r.top-r.height/2)/(r.height/2);
+  g('pxDot').style.opacity='1';
+});
+window.addEventListener('touchmove',e=>{
+  if(!pxEnabled||!e.touches[0]) return;
+  const st=document.getElementById('stage');
+  const r=st.getBoundingClientRect();
+  S.pxRaw.x=(e.touches[0].clientX-r.left-r.width/2)/(r.width/2);
+  S.pxRaw.y=(e.touches[0].clientY-r.top-r.height/2)/(r.height/2);
+},{passive:true});
+
+// gyro
+if(typeof DeviceOrientationEvent!=='undefined'){
+  const req=DeviceOrientationEvent.requestPermission;
+  const start=()=>window.addEventListener('deviceorientation',e=>{
+    if(!pxEnabled) return;
+    S.pxRaw.x=Math.max(-1,Math.min(1,(e.gamma||0)/40));
+    S.pxRaw.y=Math.max(-1,Math.min(1,((e.beta||0)-30)/40));
+    g('pxDot').style.opacity='1';
+  });
+  if(typeof req==='function'){ document.body.addEventListener('click',()=>req().then(r=>r==='granted'&&start()),{once:true}); }
+  else start();
+}
+
+// smooth parallax loop
+function pxLoop(){
+  const smooth=0.06;
+  S.pxSmooth.x+=(S.pxRaw.x-S.pxSmooth.x)*smooth;
+  S.pxSmooth.y+=(S.pxRaw.y-S.pxSmooth.y)*smooth;
+  requestAnimationFrame(pxLoop);
+}
+pxLoop();
+
+// ══════════════════════════════════════════════════════
+// MAIN RENDER
+// ══════════════════════════════════════════════════════
+function rd(){
+  syncLabels();
+  const W=S.W, H=S.H;
+  const px=pxEnabled?S.pxSmooth:{x:0,y:0};
+  const bgPxAmt=gv('pxBG'), fgPxAmt=gv('pxFG'), ckPxAmt=gv('pxCK');
+
+  const bgPx={x:-px.x*bgPxAmt*S.zoom, y:-px.y*bgPxAmt*S.zoom};
+  const fgPx={x: px.x*fgPxAmt*S.zoom,  y: px.y*fgPxAmt*S.zoom};
+  const ckPx={x: px.x*ckPxAmt*(W/1080), y: px.y*ckPxAmt*(H/1920)};
+
+  const fontSize=Math.round(W*gv('cSize')/100);
+  const fontStr=`${gv('fontW')} ${fontSize}px ${gc('fontSel')}`;
+  const opac=gv('cOpac')/100;
+  const depthOn=gb('depthOn');
+  const depthAmt=gv('depthAmt')/100;
+  const depthBlur=gv('depthBlur');
+  const depthOff=gv('depthOff');
+  const maskOn=gb('maskOn');
+  const maskEdge=gv('maskEdge');
+  const splitPxY=H*S.splitY;
+
+  ctx.clearRect(0,0,W,H);
+
+  // ── 1. BACKGROUND ──
+  if(S.bgImg){
+    drawImgLayer(ctx,S.bgImg,W,H,gv('bgScale'),S.bgX,S.bgY,gv('bgBlur'),gv('bgDim')/100,bgPx,null);
+  } else {
+    const grad=ctx.createLinearGradient(0,0,W,H);
+    grad.addColorStop(0,gc('cBG')); grad.addColorStop(1,gc('cBG2'));
+    ctx.fillStyle=grad; ctx.fillRect(0,0,W,H);
+  }
+
+  // ── 2. DEPTH BLUR LAYERS ──
+  if(depthOn){
+    const dOff=depthOff*(W/1080);
+    ctx.save();
+    ctx.globalAlpha=opac*depthAmt*0.4;
+    ctx.filter=`blur(${depthBlur*1.7}px)`;
+    const ckPxFar={x:ckPx.x-dOff*1.3,y:ckPx.y-dOff*0.5};
+    // shift clock position for depth layers
+    const origX=S.clockX, origY=S.clockY;
+    S.clockX=origX-(dOff*1.3)/W; S.clockY=origY-(dOff*0.5)/H;
+    drawClock(ctx,W,H,fontSize,fontStr,ckPx);
+    S.clockX=origX; S.clockY=origY;
+    ctx.restore();
+
+    ctx.save();
+    ctx.globalAlpha=opac*depthAmt*0.65;
+    ctx.filter=`blur(${depthBlur*0.55}px)`;
+    const origX2=S.clockX, origY2=S.clockY;
+    S.clockX=origX2-(dOff*0.5)/W; S.clockY=origY2-(dOff*0.2)/H;
+    drawClock(ctx,W,H,fontSize,fontStr,ckPx);
+    S.clockX=origX2; S.clockY=origY2;
+    ctx.restore();
+  }
+
+  // ── 3. MAIN CLOCK ──
+  ctx.save();
+  ctx.globalAlpha=opac;
+  drawClock(ctx,W,H,fontSize,fontStr,ckPx);
+  ctx.restore();
+
+  // ── 4. FOREGROUND IMAGE (masked above split) ──
+  if(S.fgImg && maskOn){
+    const tmp=document.createElement('canvas');
+    tmp.width=W; tmp.height=H;
+    const tc=tmp.getContext('2d');
+    drawImgLayer(tc,S.fgImg,W,H,gv('fgScale'),S.fgX,S.fgY,0,gv('fgDim')/100,fgPx,null);
+    // gradient mask: opaque above split, transparent below
+    const edge=Math.max(1,maskEdge);
+    const mg=tc.createLinearGradient(0,splitPxY-edge,0,splitPxY+edge);
+    mg.addColorStop(0,'rgba(0,0,0,1)'); mg.addColorStop(1,'rgba(0,0,0,0)');
+    tc.globalCompositeOperation='destination-in';
+    tc.fillStyle=mg; tc.fillRect(0,0,W,H);
+    ctx.drawImage(tmp,0,0);
+  } else if(S.fgImg && !maskOn){
+    // if mask is off but FG exists, just show it as overlay
+    drawImgLayer(ctx,S.fgImg,W,H,gv('fgScale'),S.fgX,S.fgY,0,gv('fgDim')/100,fgPx,null);
+  }
+
+  posHandles();
+}
+
+// ══════════════════════════════════════════════════════
+// HANDLES
+// ══════════════════════════════════════════════════════
+function posHandles(){
+  const ww=S.W*S.zoom, wh=S.H*S.zoom;
+  const sl=g('splitLine'); sl.style.top=(S.splitY*wh-1)+'px';
+  const dc=g('dotClock'); dc.style.left=(S.clockX*ww)+'px'; dc.style.top=(S.clockY*wh)+'px';
+  const db=g('dotBG'); db.style.left=(S.bgX*ww)+'px'; db.style.top=(S.bgY*wh)+'px';
+  const df=g('dotFG'); df.style.left=(S.fgX*ww)+'px'; df.style.top=(S.fgY*wh)+'px';
+}
+
+// ══════════════════════════════════════════════════════
+// DRAGGING
+// ══════════════════════════════════════════════════════
+let drag=null; // 'clock','bg','fg','split'
+
+function canvasRel(e){
+  const r=g('cWrap').getBoundingClientRect();
+  const src=e.touches?e.touches[0]:e;
+  return { x:(src.clientX-r.left)/(S.W*S.zoom), y:(src.clientY-r.top)/(S.H*S.zoom) };
+}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+
+function setupDot(id, key){
+  const el=g(id);
+  el.addEventListener('mousedown',e=>{ drag=key; e.preventDefault(); e.stopPropagation(); });
+  el.addEventListener('touchstart',e=>{ drag=key; e.preventDefault(); e.stopPropagation(); },{passive:false});
+}
+setupDot('dotClock','clock');
+setupDot('dotBG','bg');
+setupDot('dotFG','fg');
+
+g('splitLine').addEventListener('mousedown',e=>{ drag='split'; e.preventDefault(); });
+g('splitLine').addEventListener('touchstart',e=>{ drag='split'; e.preventDefault(); },{passive:false});
+
+window.addEventListener('mousemove',e=>{
+  if(!drag) return;
+  const p=canvasRel(e);
+  applyDrag(drag,p);
+});
+window.addEventListener('touchmove',e=>{
+  if(!drag) return;
+  const p=canvasRel(e);
+  applyDrag(drag,p);
+},{passive:true});
+window.addEventListener('mouseup',()=>drag=null);
+window.addEventListener('touchend',()=>drag=null);
+
+function applyDrag(type,p){
+  switch(type){
+    case 'clock': S.clockX=clamp(p.x,.02,.98); S.clockY=clamp(p.y,.02,.98); break;
+    case 'bg':    S.bgX=clamp(p.x,.05,.95);    S.bgY=clamp(p.y,.05,.95);    break;
+    case 'fg':    S.fgX=clamp(p.x,.05,.95);    S.fgY=clamp(p.y,.05,.95);    break;
+    case 'split': S.splitY=clamp(p.y,.05,.95); break;
+  }
+  rd();
+}
+
+// wheel zoom
+g('stage').addEventListener('wheel',e=>{ e.preventDefault(); doZ(e.deltaY<0?.08:-.08); },{passive:false});
+
+// ══════════════════════════════════════════════════════
+// EXPORT
+// ══════════════════════════════════════════════════════
+function doExport(){
+  const btn=g('expBtn'); btn.textContent='Generujem…'; btn.disabled=true;
+  // temporarily reset parallax for export
+  const savedRaw={...S.pxRaw}, savedSmooth={...S.pxSmooth};
+  S.pxRaw={x:0,y:0}; S.pxSmooth={x:0,y:0};
+  rd();
+  setTimeout(()=>{
+    const link=document.createElement('a');
+    link.download='tapeta-hodiny.png'; link.href=cv.toDataURL('image/png'); link.click();
+    S.pxRaw=savedRaw; S.pxSmooth=savedSmooth;
+    btn.innerHTML='✓ Stiahnuté'; btn.disabled=false;
+    setTimeout(()=>{ btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Stiahnuť PNG'; },2500);
+  },100);
+}
+
+// ══════════════════════════════════════════════════════
+// LIVE TICK + PARALLAX RENDER LOOP
+// ══════════════════════════════════════════════════════
+let lastRender=0;
+function renderLoop(ts){
+  // throttle: 30fps or when parallax is active
+  if(pxEnabled || ts-lastRender>500){
+    rd(); lastRender=ts;
+  }
+  requestAnimationFrame(renderLoop);
+}
+requestAnimationFrame(renderLoop);
+
+// ══════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════
+initCv();
+window.addEventListener('resize',()=>{ fitZ(); rd(); });
+</script>
+</body>
+</html>
